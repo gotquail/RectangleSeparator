@@ -19,7 +19,7 @@ class PlayState extends FlxState
 {
 
 	// Rectangle params.
-	private static var NUM_RECTANGLES:Int = 64;
+	private static var NUM_RECTANGLES:Int = 8;
 
 	// Spawn area.
 	private var SPAWN_MIN_X:Float = 0.35*FlxG.width;

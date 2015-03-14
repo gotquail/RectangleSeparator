@@ -136,47 +136,42 @@ class Rectangle extends FlxGroup
 			return;
 		}
 
-		var centerOfNeighbourMass:FlxPoint = new FlxPoint(0, 0);
 		while (neighboursOverlapping.length > 0) {
 			
 			var neighbour:Rectangle = neighboursOverlapping.pop();
 			var neighbourMidpoint:FlxPoint = neighbour.getMidpoint();
-
 			var movementFromNeighbourVector:FlxVector = new FlxVector(this.getX() - neighbour.getX(), this.getY() - neighbour.getY());
 
-			// TODO: calculate extent of overlap, and move proportionally to the ratio 
-			// between overlap and total area.
-			{
-				var overlapWidth:Float = (this.getWidth() + neighbour.getWidth()) / 2  -  Math.abs(movementFromNeighbourVector.x);
-				var overlapHeight:Float = (this.getHeight() + neighbour.getHeight()) / 2  -  Math.abs(movementFromNeighbourVector.y);
+			// If the overlap is big then we want to move more.
+			var overlapWidth:Float = (this.getWidth() + neighbour.getWidth()) / 2  -  Math.abs(movementFromNeighbourVector.x);
+			var overlapHeight:Float = (this.getHeight() + neighbour.getHeight()) / 2  -  Math.abs(movementFromNeighbourVector.y);
+			movementFromNeighbourVector.x *= overlapWidth / this.getWidth();
+			movementFromNeighbourVector.y *= overlapHeight / this.getHeight();
 
-				// If the overlap is big then we want to move more.
-				movementFromNeighbourVector.x *= overlapWidth / this.getWidth();
-				movementFromNeighbourVector.y *= overlapHeight / this.getHeight();
-			}
+			// Adjust the displacement to be proportional to the relative
+			// priorities between you and your neighbour. If the neighbour has
+			// higher priority then we should be moving more.
+			var priorityScaling:Float = neighbour.priority / (this.priority + neighbour.priority);
+			movementFromNeighbourVector.x *= priorityScaling;
+			movementFromNeighbourVector.y *= priorityScaling;
 
+			// Add to total planned movement, which is just a sum of the
+			// affects of our neighbours.
 			movementVector.x += movementFromNeighbourVector.x;
 			movementVector.y += movementFromNeighbourVector.y;
-
-			centerOfNeighbourMass.x += neighbourMidpoint.x;
-			centerOfNeighbourMass.y += neighbourMidpoint.y;
 		}
-		centerOfNeighbourMass.x /= numNeighbours;
-		centerOfNeighbourMass.y /= numNeighbours;
 
-		//movementVector.x = centerOfNeighbourMass.x - getMidpoint().x;
-		//movementVector.y = centerOfNeighbourMass.y - getMidpoint().y;
+
 
 		if ( !movementVector.isZero() ) {
-			// if (priority > HIGH_PRIORITY_BOUNDARY) {
-			// 	movementVector.scale(0.1);
-			// }
-			// else {
-			// 	movementVector.scale(0.4);
-			// }
-			
-			//////movementVector.normalize();
-			//movementVector.negate();
+			// Scale the movement down a bit... just messing with some numbers
+			// here.
+			movementVector.x *= 0.5;
+			movementVector.y *= 0.5;
+
+			// Add a small random value, just to prevent cycles.
+			movementVector.x += FlxRandom.float() - 0.5;
+			movementVector.y += FlxRandom.float() - 0.5;
 		}
 
 		//trace(movementVector);
