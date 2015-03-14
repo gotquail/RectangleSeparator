@@ -1,5 +1,6 @@
 
 TODO:
+
 	Generate random squares. Get simple separation working.
 
 NOTES:
