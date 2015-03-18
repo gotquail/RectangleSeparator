@@ -5,6 +5,7 @@ import flixel.group.FlxGroup;
 import flixel.util.FlxRandom;
 import flixel.util.FlxPoint;
 import flixel.util.FlxVector;
+import flixel.text.FlxText;
 
 class Rectangle extends FlxGroup
 {
@@ -20,11 +21,14 @@ class Rectangle extends FlxGroup
 	private var initialPosition:FlxPoint;
 
 	private var visibleRectangle:FlxSprite;
+
 	private var priority:Float;
 
 	private var neighboursOverlapping:Array<Rectangle>;
 
 	private var movementVector:FlxVector;
+
+	private var numOverlapsText:FlxText;
 
 	public function new(minX:Float, maxX:Float, minY:Float, maxY:Float) {
 		super();
@@ -48,9 +52,11 @@ class Rectangle extends FlxGroup
 			rectangleColour += 0x88000000; // Opacity.
 		}	
 
-		// // Random colour.
-		// rectangleColour = Std.int((1 - priority) * 0x00dddddd);
-		// rectangleColour += 0x88000000; // Opacity.
+		// Colour based on priority.
+		if (priority != 0) {
+			rectangleColour = Std.int((1 - priority) * 0x00dddddd);
+			rectangleColour += 0x88000000; // Opacity.
+		}
 		
 		var width:Int = Std.int(FlxRandom.float() * (MAX_WIDTH - MIN_WIDTH) + MIN_WIDTH);
 		var height:Int = Std.int(FlxRandom.float() * (MAX_HEIGHT - MIN_HEIGHT) + MIN_HEIGHT);
@@ -73,6 +79,9 @@ class Rectangle extends FlxGroup
 		visibleRectangle.x = x;
 		visibleRectangle.y = y;
 		add(visibleRectangle);
+
+		numOverlapsText = new FlxText(x, y, 100, "0");
+		add(numOverlapsText);
 	}
 
 	public static function areOverlapping(r1:Rectangle, r2:Rectangle):Bool {
@@ -89,7 +98,7 @@ class Rectangle extends FlxGroup
 
 	public function setX(newX:Float):Void {
 		visibleRectangle.x = newX;
-
+		numOverlapsText.x = newX;
 		return;
 	}
 
@@ -103,7 +112,7 @@ class Rectangle extends FlxGroup
 
 	public function setY(newY:Float):Void {
 		visibleRectangle.y = newY;
-		
+		numOverlapsText.y = newY;
 		return;
 	}
 
@@ -120,14 +129,17 @@ class Rectangle extends FlxGroup
 	}
 
 	public function recordOverlap(rect:Rectangle):Void {
-		neighboursOverlapping.insert(neighboursOverlapping.length, rect);
+		neighboursOverlapping.push(rect);
 	}
 
 	public function calculateSeparationVector():Void {
 		movementVector = new FlxVector(0, 0);
 
+		numOverlapsText.text = Std.string(neighboursOverlapping.length);
+
 		// Priority-0 rectangles don't move.
 		if (priority == 0) {
+			neighboursOverlapping = new Array<Rectangle>(); // Clear since we won't be popping them off.
 			return;
 		}
 
@@ -137,23 +149,26 @@ class Rectangle extends FlxGroup
 		}
 
 		while (neighboursOverlapping.length > 0) {
-			
 			var neighbour:Rectangle = neighboursOverlapping.pop();
 			var neighbourMidpoint:FlxPoint = neighbour.getMidpoint();
-			var movementFromNeighbourVector:FlxVector = new FlxVector(this.getX() - neighbour.getX(), this.getY() - neighbour.getY());
+			var midpoint:FlxPoint = getMidpoint();
+			var movementFromNeighbourVector:FlxVector = new FlxVector(midpoint.x - neighbourMidpoint.x, midpoint.y - neighbourMidpoint.y);
 
-			// If the overlap is big then we want to move more.
+			// If the overlap is big then we want to move more in the opposite
+			// direction (i.e. big overlap height then increase horizontal
+			// movement).
 			var overlapWidth:Float = (this.getWidth() + neighbour.getWidth()) / 2  -  Math.abs(movementFromNeighbourVector.x);
 			var overlapHeight:Float = (this.getHeight() + neighbour.getHeight()) / 2  -  Math.abs(movementFromNeighbourVector.y);
-			movementFromNeighbourVector.x *= overlapWidth / this.getWidth();
-			movementFromNeighbourVector.y *= overlapHeight / this.getHeight();
+			movementFromNeighbourVector.y *= overlapWidth / this.getWidth();
+			movementFromNeighbourVector.x *= overlapHeight / this.getHeight();
 
-			// Adjust the displacement to be proportional to the relative
-			// priorities between you and your neighbour. If the neighbour has
-			// higher priority then we should be moving more.
-			var priorityScaling:Float = neighbour.priority / (this.priority + neighbour.priority);
-			movementFromNeighbourVector.x *= priorityScaling;
-			movementFromNeighbourVector.y *= priorityScaling;
+			// // Adjust the displacement to be proportional to the relative
+			// // priorities between you and your neighbour. If the neighbour has
+			// // higher priority (right now 'high priority' is a low number, so
+			// // do 1-priority) then we should be moving more.
+			// var priorityScaling:Float = 1 - ( neighbour.priority / (this.priority + neighbour.priority) );
+			// movementFromNeighbourVector.x *= priorityScaling;
+			// movementFromNeighbourVector.y *= priorityScaling;
 
 			// Add to total planned movement, which is just a sum of the
 			// affects of our neighbours.
@@ -161,13 +176,12 @@ class Rectangle extends FlxGroup
 			movementVector.y += movementFromNeighbourVector.y;
 		}
 
-
-
 		if ( !movementVector.isZero() ) {
 			// Scale the movement down a bit... just messing with some numbers
 			// here.
-			movementVector.x *= 0.5;
-			movementVector.y *= 0.5;
+			var movementScale:Float = 0.2;
+			movementVector.x *= movementScale;
+			movementVector.y *= movementScale;
 
 			// Add a small random value, just to prevent cycles.
 			movementVector.x += FlxRandom.float() - 0.5;
@@ -195,6 +209,9 @@ class Rectangle extends FlxGroup
 	public function moveToStartPosition():Void {
 		visibleRectangle.x = initialPosition.x;
 		visibleRectangle.y = initialPosition.y;
+
+		numOverlapsText.x = initialPosition.x;
+		numOverlapsText.y = initialPosition.y;
 	}
 
 }

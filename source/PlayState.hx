@@ -19,7 +19,7 @@ class PlayState extends FlxState
 {
 
 	// Rectangle params.
-	private static var NUM_RECTANGLES:Int = 8;
+	private static var NUM_RECTANGLES:Int = 48;
 
 	// Spawn area.
 	private var SPAWN_MIN_X:Float = 0.35*FlxG.width;
@@ -28,7 +28,6 @@ class PlayState extends FlxState
 	private var SPAWN_MAX_Y:Float = 0.65*FlxG.height;
 	
 	private var rectangles:Array<Rectangle>;
-
 
 	private var NUM_UPDATES_PER_STEP:Int = 1; // -1 for no limit.
 	private var numUpdates:Int = 0;
@@ -43,19 +42,17 @@ class PlayState extends FlxState
 		FlxG.camera.bgColor = 0xffffffff;
 		//FlxG.mouse.visible = false;
 
-		rectangles = new Array<Rectangle>();
 		// Populate rectangles.
-		{
-			var i:Int = 0;
-			while (i < NUM_RECTANGLES) {
-
-				var rect:Rectangle = new Rectangle(SPAWN_MIN_X, SPAWN_MAX_X, SPAWN_MIN_Y, SPAWN_MAX_Y);
-				rectangles.insert(i, rect);
-				add(rect);
-				i++;
-			}
+		rectangles = new Array<Rectangle>();
+		var i:Int = 0;
+		while (i < NUM_RECTANGLES) {
+			var rect:Rectangle = new Rectangle(SPAWN_MIN_X, SPAWN_MAX_X, SPAWN_MIN_Y, SPAWN_MAX_Y);
+			rectangles.insert(i, rect);
+			add(rect);
+			i++;
 		}
 
+		// Add instructions.
 		var instructions:FlxText = new FlxText(0, 0, 250, "F: Fast forward\nR: Regenerate\nS: Step\nQ: Reset locations");
 		instructions.setFormat(10, 0xff444444 );
 		add(instructions);
@@ -102,20 +99,18 @@ class PlayState extends FlxState
 		// Find overlaps.
 		{
 			for (i in 0...rectangles.length) {
-				for (j in i...rectangles.length) {
+				for (j in i+1...rectangles.length) {
 					var r1:Rectangle = rectangles[i];
 					var r2:Rectangle = rectangles[j];
 
 					if (Rectangle.areOverlapping(r1, r2)) {
-						//trace ("Overlap");
+						trace ("Overlap" + FlxRandom.float());
 
 						r1.recordOverlap(r2);
 						r2.recordOverlap(r1);
 					}
 					else {
 						//trace ("No overlap");
-
-
 					}
 				}
 			}
